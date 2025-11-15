@@ -1,77 +1,71 @@
-const statsFAQ = [
-  {
-    pattern: /(mean|average)/i,
-    answer:
-      "The mean (average) is the sum of all values divided by the number of values. It measures the center of the data."
-  },
-  {
-    pattern: /median/i,
-    answer:
-      "The median is the middle value when the data are sorted. If there is an even number of values, it is the average of the two middle values."
-  },
-  {
-    pattern: /mode/i,
-    answer:
-      "The mode is the value that appears most frequently. A dataset can have no mode, one mode, or multiple modes."
-  },
-  {
-    pattern: /(variance|standard deviation|std dev|sd)/i,
-    answer:
-      "Variance measures how spread out the data are. Standard deviation is the square root of the variance and uses the same units as the data."
-  },
-  {
-    pattern: /(population|sample)\s+mean/i,
-    answer:
-      "A population mean (μ) includes all members of a population, while the sample mean (x̄) is calculated from a subset of that population."
-  },
-  {
-    pattern: /(population|sample)\s+standard deviation/i,
-    answer:
-      "Population standard deviation divides by N. Sample standard deviation divides by n − 1 to correct for bias when estimating from a sample."
-  },
-  {
-    pattern: /(null hypothesis|alternative hypothesis|h0|ha)/i,
-    answer:
-      "The null hypothesis (H₀) states no effect or no difference. The alternative hypothesis (Hₐ) states the effect or difference being tested."
-  },
-  {
-    pattern: /(p[\s-]?value|pvalue|p[-\s]?val)/i,
-    answer:
-      "The p-value is the probability of observing results as extreme as the sample results if the null hypothesis is true. A small p-value gives evidence against H₀."
-  },
-  {
-    pattern: /(type i error|type 1 error)/i,
-    answer:
-      "A Type I error occurs when you reject a true null hypothesis. Its probability is α (commonly 0.05)."
-  },
-  {
-    pattern: /(type ii error|type 2 error)/i,
-    answer:
-      "A Type II error occurs when you fail to reject a false null hypothesis. Its probability is β, and 1 − β is statistical power."
-  },
-  {
-    pattern: /(confidence interval|ci)/i,
-    answer:
-      "A confidence interval provides a range of plausible values for a population parameter. A 95% CI captures the true parameter in about 95% of repeated samples."
-  },
-  {
-    pattern: /(normal distribution|bell curve|z score|z-score)/i,
-    answer:
-      "The normal distribution is a symmetric bell-shaped distribution. A z-score indicates how many standard deviations a value is from the mean."
-  },
-  {
-    pattern: /(z[\s-]?test|t[\s-]?test)/i,
-    answer:
-      "A z-test is used when the population standard deviation is known or the sample size is large. A t-test is used when the population SD is unknown and the sample SD is used instead."
-  },
-  {
-    pattern: /correlation/i,
-    answer:
-      "Correlation measures the strength and direction of a linear relationship between two quantitative variables. Correlation does not imply causation."
-  },
-  {
-    pattern: /sample size/i,
-    answer:
-      "Sample size is the number of observations in a sample. Larger samples produce more precise estimates and more powerful tests."
+const chatWindow = document.getElementById("chat-window");
+const chatForm = document.getElementById("chat-form");
+const userInput = document.getElementById("user-input");
+
+// 🔗 Change this to your real backend URL when deployed
+const API_URL = "https://your-stats-bot.onrender.com/api/chat";
+
+function addMessage(text, sender = "bot") {
+  const msg = document.createElement("div");
+  msg.classList.add("message", sender);
+  msg.textContent = text;
+  chatWindow.appendChild(msg);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
+async function getBotResponse(message) {
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ message })
+    });
+
+    if (!response.ok) {
+      throw new Error("Network response was not ok");
+    }
+
+    const data = await response.json();
+    return data.reply || "Sorry, I could not get a reply from the statistics tutor.";
+  } catch (error) {
+    console.error(error);
+    return "There was an error contacting the statistics tutor. Please try again later.";
   }
-];
+}
+
+// Handle form submit
+chatForm.addEventListener("submit", async function (e) {
+  e.preventDefault();
+  const text = userInput.value;
+  if (!text.trim()) return;
+
+  // User message
+  addMessage(text, "user");
+  userInput.value = "";
+
+  // Temporary typing indicator
+  const typingId = "typing-indicator";
+  const typing = document.createElement("div");
+  typing.id = typingId;
+  typing.classList.add("message", "bot");
+  typing.textContent = "Thinking...";
+  chatWindow.appendChild(typing);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+
+  // Get real response from backend
+  const botReply = await getBotResponse(text);
+
+  // Remove typing indicator
+  const typingNode = document.getElementById(typingId);
+  if (typingNode) {
+    chatWindow.removeChild(typingNode);
+  }
+
+  // Add bot message
+  addMessage(botReply, "bot");
+});
+
+// Initial greeting
+addMessage("Hi, I'm your ChatGPT-powered Statistics Tutor. Ask me any statistics or probability question.");
